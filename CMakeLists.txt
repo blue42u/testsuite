@@ -1,24 +1,13 @@
 cmake_minimum_required(VERSION 3.4.0)
 project(Dyninst-TestSuite)
 
-# User must provide location of Dyninst cmake files either as a cache or
-# environment variable
-if(NOT Dyninst_DIR)
-  if("$ENV{Dyninst_DIR}" STREQUAL "")
-    message(FATAL_ERROR "Dyninst_DIR not found: define as a cache or environment variable")
-  else()
-    set(_dyninst_dir ENV{Dyninst_DIR})
-  endif()
-else()
-  set(_dyninst_dir ${Dyninst_DIR})
-  set(ENV{Dyninst_DIR} ${_dyninst_dir})
-endif()
-
-set(Dyninst_DIR ${_dyninst_dir} CACHE PATH "Location of Dyninst cmake files")
+set(Dyninst_DIR $ENV{Dyninst_DIR} CACHE PATH "Location of Dyninst cmake files")
+set(Dyninst_SRC_DIR $ENV{Dyninst_SRC_DIR} CACHE PATH "Location of Dyninst source files")
 
 # Import the system threads library
 find_package(Threads)
 
+if(Dyninst_DIR)
 # Read the cache generated from building Dyninst
 load_cache(${Dyninst_DIR}
            Boost_SYSTEM_LIBRARY_RELEASE
@@ -31,6 +20,32 @@ load_cache(${Dyninst_DIR}
            ElfUtils_INCLUDE_DIRS
            ElfUtils_LIBRARY_DIRS
            )
+set(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH}
+    "${PROJECT_SOURCE_DIR}/cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/Modules"
+    "${Dyninst_DIR}"
+    "${Dyninst_DIR}/Modules")
+elseif(Dyninst_SRC_DIR)
+# Use a search path to find all the bits
+set(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH}
+    "${PROJECT_SOURCE_DIR}/cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/Modules"
+    "${Dyninst_SRC_DIR}/cmake"
+    "${Dyninst_SRC_DIR}/cmake/Modules")
+include(ElfUtils)
+include(ThreadingBuildingBlocks)
+include(Boost)
+cmake_policy(SET CMP0074 NEW)
+set(DYNINST_ROOT ${Dyninst_SRC_DIR})
+include(${Dyninst_SRC_DIR}/cmake/platform.cmake)
+include(${Dyninst_SRC_DIR}/cmake/cap_arch_def.cmake)
+set(DYNINST_PLATFORM ${PLATFORM})
+set(DYNINST_INTERNAL_DEFINES ${UNIFIED_DEFINES})
+else()
+message(FATAL_ERROR "One of Dyninst[_SRC]_DIR must be set!")
+endif()
 
 # Import the include and library directory names
 # NB: TBB and ElfUtils are not (currently) used directly in
@@ -46,13 +61,6 @@ add_definitions(${TBB_DEFINES})
 
 include_directories(${ElfUtils_INCLUDE_DIRS})
 link_directories(${ElfUtils_LIBRARY_DIRS})
-
-set(CMAKE_MODULE_PATH
-    ${CMAKE_MODULE_PATH}
-    "${PROJECT_SOURCE_DIR}/cmake"
-    "${PROJECT_SOURCE_DIR}/cmake/Modules"
-    "${Dyninst_DIR}"
-    "${Dyninst_DIR}/Modules")
 
 include(c++11.cmake)
 include(LibXml2)
