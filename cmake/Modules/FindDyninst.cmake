@@ -5,7 +5,7 @@
 # A heart surgery wrapper for the Dyninst CMake cache.
 
 # Hunt down the include dir first
-find_path(Dyninst_INCLUDE_DIR Symtab.h)
+find_path(Dyninst_INCLUDE_DIR Symtab.h HINTS ${Dyninst_ROOT}/include)
 set(DYNINST_INCLUDE_DIR ${Dyninst_INCLUDE_DIR})
 set(Dyninst_INCLUDE_DIRS ${Dyninst_INCLUDE_DIR})
 
@@ -15,7 +15,7 @@ include(FindPackageHandleStandardArgs)
 set(Dyninst_LIBRARIES)
 foreach(comp common symtabAPI dyninstAPI instructionAPI proccontrol)
   # Find the library itself
-  find_library(Dyninst_${comp}_LIBRARY ${comp})
+  find_library(Dyninst_${comp}_LIBRARY ${comp} HINTS ${Dyninst_ROOT}/include)
   if(Dyninst_${comp}_LIBRARY)
     set(Dyninst_LIBRARIES ${Dyninst_LIBRARIES} ${Dyninst_${comp}_LIBRARY})
     set(Dyninst_${comp}_FOUND True)
